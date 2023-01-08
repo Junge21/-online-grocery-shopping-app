@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:socion/screens/home_screen.dart';
+import 'package:socion/utils/shared_prefs_helper.dart';
 import 'package:velocity_x/velocity_x.dart';
 
 import '/constants/images.dart';
@@ -13,16 +15,35 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  SharedPrefsHelper sharedPrefsHelper = SharedPrefsHelper();
+
+
+
   void _navigateToNext() async {
-    Future.delayed(const Duration(seconds: 2), () {
+    if (sharedPrefsHelper.sharedPreferences!=null) {
+      if (sharedPrefsHelper.getBoolPrefs() == false) {
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.of(context).pushNamed(LoginScreen.id);
+        });
+      } 
+      else
+      {
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.of(context).pushNamed(HomeScreen.id);
+        });
+      }
+    }
+    else{
+       Future.delayed(const Duration(seconds: 2), () {
       Navigator.of(context).pushNamed(LoginScreen.id);
     });
+    }
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    sharedPrefsHelper.getInstance;
     _navigateToNext();
   }
 

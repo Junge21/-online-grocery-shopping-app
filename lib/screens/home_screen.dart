@@ -1,74 +1,79 @@
-import 'dart:io';
+
+
 
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class HomeScreen extends StatefulWidget {
-   static const String id = '/home';
+    static const String id = '/home';
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+
 class _HomeScreenState extends State<HomeScreen> {
-  Barcode? result;
-  QRViewController? controller;
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller!.pauseCamera();
-    }
-    controller!.resumeCamera();
-  }
-
-  void qrView(QRViewController qrViewController) {
-    controller = qrViewController;
-    qrViewController.scannedDataStream.listen((event) {
-      setState(() {
-        result = event;
-      });
-    });
-  }
-
+    String code="";
+  MobileScannerController cameraController = MobileScannerController();
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.red,
-      ),
-      body: SafeArea(
-          child: Column(
-        children: [
-          Center(
-            child: SizedBox(
-              height: 400,
-              width: 400,
-              child: QRView(
-                key: qrKey,
-                onQRViewCreated: qrView,
-                overlay: QrScannerOverlayShape(
-//customizing scan area
-                  borderWidth: 10,
-                  borderColor: Colors.teal,
-                  borderLength: 20,
-                  borderRadius: 10,
-                  cutOutSize: MediaQuery.of(context).size.width * 0.8,
-                ),
+    return  Scaffold(
+        appBar: AppBar(
+          title: const Text('Mobile Scanner'),
+          actions: [
+            IconButton(
+              color: Colors.white,
+              icon: ValueListenableBuilder(
+                valueListenable: cameraController.torchState,
+                builder: (context, state, child) {
+                  switch (state as TorchState) {
+                    case TorchState.off:
+                      return const Icon(Icons.flash_off, color: Colors.grey);
+                    case TorchState.on:
+                      return const Icon(Icons.flash_on, color: Colors.yellow);
+                  }
+                },
               ),
+              iconSize: 32.0,
+              onPressed: () => cameraController.toggleTorch(),
             ),
-          ),
-          const SizedBox(
-            height: 50,
-          ),
-          result != null
-              ? Text(result!.code.toString())
-              : const Text("Scan Please")
-        ],
-      )),
-      floatingActionButton: FloatingActionButton(onPressed: (() {})),
-    );
+            IconButton(
+              color: Colors.white,
+              icon: ValueListenableBuilder(
+                valueListenable: cameraController.cameraFacingState,
+                builder: (context, state, child) {
+                  switch (state as CameraFacing) {
+                    case CameraFacing.front:
+                      return const Icon(Icons.camera_front);
+                    case CameraFacing.back:
+                      return const Icon(Icons.camera_rear);
+                  }
+                },
+              ),
+              iconSize: 32.0,
+              onPressed: () => cameraController.switchCamera(),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            MobileScanner(
+                allowDuplicates: false,
+                controller: cameraController,
+                onDetect: (barcode, args) {
+                  if (barcode.rawValue == null) {
+                    debugPrint('Failed to scan Barcode');
+                  } else {
+                   code = barcode.rawValue!;
+                    debugPrint('Barcode found! $code');
+                  }
+                }
+                ),
+                Text(code)
+          ],
+        ));
   }
 }
+
+ 

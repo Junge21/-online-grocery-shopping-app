@@ -4,6 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:socion/components/show_toast.dart';
+import 'package:socion/firebase_auth/auth_exception_handler.dart';
+import 'package:socion/firebase_auth/firebase_auth.dart';
+import 'package:socion/provider/auth_service.dart';
+import 'package:socion/screens/home_screen.dart';
 import 'package:velocity_x/velocity_x.dart';
 
 import '/components/blur_container.dart';
@@ -23,6 +29,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _blurAnimationController;
+  TextEditingController usename = TextEditingController();
+  TextEditingController password = TextEditingController();
 
   @override
   void initState() {
@@ -45,6 +53,7 @@ class _LoginScreenState extends State<LoginScreen>
     _blurAnimationController.dispose();
   }
 
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen>
         BlurContainer(value: _blurAnimationController.value),
         SafeArea(
           child: Form(
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -68,14 +78,18 @@ class _LoginScreenState extends State<LoginScreen>
                 const Spacer(),
                 _buildTitleText(context),
                 const Spacer(),
-                const PrimaryTextField(
+                PrimaryTextField(
                   hintText: 'Name',
+                  validateText: "This field must not be empty!",
                   prefixIcon: Icons.person,
+                  controller: usename,
                 ),
                 24.heightBox,
-                const PrimaryTextField(
+                PrimaryTextField(
                   hintText: 'Password',
+                  validateText: "This field must not be empty!",
                   prefixIcon: CupertinoIcons.padlock,
+                  controller: password,
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -92,7 +106,19 @@ class _LoginScreenState extends State<LoginScreen>
                   ],
                 ),
                 const Spacer(),
-                buildSignInGradientButtonRow(context, 'Sign In', () {}),
+                buildSignInGradientButtonRow(context, 'Sign In', () {
+                  if (_formKey.currentState!.validate()) {
+                    final status =
+                        AuthService().requestLogin(usename.text, password.text);
+                    if (status == AuthResultStatus.successful) {
+                      showToast("Login Succesful", Colors.greenAccent);
+                      Navigator.pushReplacementNamed(context, HomeScreen.id);
+                    }
+                    final errorMessage =
+                        AuthExceptionHandler.generateExceptionMessage(status);
+                    showToast(errorMessage, Colors.red);
+                  }
+                }),
                 const Spacer(),
                 RichText(
                   text: TextSpan(children: [
@@ -121,6 +147,8 @@ class _LoginScreenState extends State<LoginScreen>
       ]),
     );
   }
+
+
 
   Column _buildTitleText(BuildContext context) {
     return Column(

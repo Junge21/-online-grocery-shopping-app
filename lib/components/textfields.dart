@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:velocity_x/velocity_x.dart';
 
 class PrimaryTextField extends StatefulWidget {
-  const PrimaryTextField({
+   PrimaryTextField({
+    required this.controller,
     this.hintText = '',
     this.prefixIcon,
+    this.validateText = "",
     Key? key,
   }) : super(key: key);
   final IconData? prefixIcon;
+   TextEditingController controller=TextEditingController();
   final String hintText;
-
+  final String validateText;
   @override
   State<PrimaryTextField> createState() => _PrimaryTextFieldState();
 }
@@ -18,12 +21,17 @@ class _PrimaryTextFieldState extends State<PrimaryTextField> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 16,
       shadowColor: Colors.black54,
       child: TextFormField(
-        validator: (v) {},
-        controller: null,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return widget.validateText;
+          }
+          return null;
+        },
+        controller:widget.controller ,
         style: Theme.of(context)
             .textTheme
             .bodyText1!

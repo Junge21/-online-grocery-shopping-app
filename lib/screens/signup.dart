@@ -1,12 +1,11 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
+import 'package:socion/components/show_toast.dart';
+import 'package:socion/firebase_auth/auth_exception_handler.dart';
+import 'package:socion/provider/auth_service.dart';
+import 'package:socion/screens/home_screen.dart';
 import 'package:velocity_x/velocity_x.dart';
-
 import '/components/blur_container.dart';
 import '/components/buttons.dart';
 import '/components/social_icon_buttons_row.dart';
@@ -24,6 +23,11 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _blurAnimationController;
+  TextEditingController usename = TextEditingController();
+  TextEditingController password = TextEditingController();
+  TextEditingController email = TextEditingController();
+  TextEditingController phone = TextEditingController();
+  TextEditingController address = TextEditingController();
 
   @override
   void initState() {
@@ -42,68 +46,94 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   @override
   void dispose() {
-    super.dispose();
+    email.dispose();
+    usename.dispose();
+    password.dispose();
     _blurAnimationController.dispose();
+    super.dispose();
   }
 
+  AuthResultStatus? status;
+  bool isLoading = false;
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Stack(children: [
-        Container(
-          decoration: const BoxDecoration(
-              image: DecorationImage(
-            image: AssetImage(
-              Images.loginBg,
-            ),
-            fit: BoxFit.cover,
+    Size size = MediaQuery.of(context).size;
+    return Consumer<AuthService>(builder: (context, value, child) {
+      return Scaffold(
+        body: SafeArea(
+          minimum: const EdgeInsets.all(15),
+          child: Form(
+              child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              double.infinity.widthBox,
+              SizedBox(
+                height: size.height * 0.05,
+              ),
+              // const Spacer(),
+              _buildTitleText(context),
+              SizedBox(
+                height: size.height * 0.05,
+              ),
+
+              // const Spacer(),
+              PrimaryTextField(
+                hintText: 'Name',
+                prefixIcon: Icons.person,
+                controller: usename,
+              ),
+              // 24.heightBox,
+              PrimaryTextField(
+                hintText: 'Password',
+                prefixIcon: CupertinoIcons.padlock,
+                controller: password,
+              ),
+              // 24.heightBox,
+              PrimaryTextField(
+                hintText: 'Email address',
+                prefixIcon: CupertinoIcons.mail_solid,
+                controller: email,
+              ),
+              // 24.heightBox,
+              PrimaryTextField(
+                hintText: 'Phone',
+                prefixIcon: CupertinoIcons.phone_fill,
+                controller: phone,
+              ),
+              // 24.heightBox,
+              PrimaryTextField(
+                hintText: 'Address',
+                prefixIcon: CupertinoIcons.location,
+                controller: address,
+              ),
+              // const Spacer(),
+              buildSignInGradientButtonRow(context, 'Create', () async {
+                _submitClick();
+              }),
+              const Spacer(),
+            ],
           )),
         ),
-        BlurContainer(value: _blurAnimationController.value),
-        SafeArea(
-          child: Form(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                double.infinity.widthBox,
-                const Spacer(),
-                _buildTitleText(context),
-                const Spacer(),
-                const PrimaryTextField(
-                  hintText: 'Name',
-                  prefixIcon: Icons.person,
-                ),
-                24.heightBox,
-                const PrimaryTextField(
-                  hintText: 'Password',
-                  prefixIcon: CupertinoIcons.padlock,
-                ),
-                24.heightBox,
-                const PrimaryTextField(
-                  hintText: 'Email address',
-                  prefixIcon: CupertinoIcons.mail_solid,
-                ),
-                24.heightBox,
-                const PrimaryTextField(
-                  hintText: 'Phone',
-                  prefixIcon: CupertinoIcons.phone_fill,
-                ),
-                const Spacer(),
-                buildSignInGradientButtonRow(context, 'Create', () {}),
-                const Spacer(),
-                Text('Or create account using social media',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: Theme.of(context).colorScheme.onBackground)),
-                24.heightBox,
-                const SocialIconButtonsRow(),
-              ],
-            ).p(24),
-          ),
-        ),
-      ]),
-    );
+      );
+    });
+  }
+
+  Future<void> _submitClick() async {
+    var provider = Provider.of<AuthService>(context, listen: false);
+    provider.isLoading = true;
+    status = await provider.requestRegister(email.text, password.text);
+    if (status == AuthResultStatus.successful) {
+      showToast("Login Successful", Colors.greenAccent);
+      Navigator.pushReplacementNamed(context, HomeScreen.id);
+      provider.isLoading = true;
+    } else {
+      final errorMessage =
+          AuthExceptionHandler.generateExceptionMessage(status);
+      if (errorMessage.toString().isEmpty) {
+      } else {
+        showToast(errorMessage, Colors.redAccent);
+      }
+    }
   }
 
   Column _buildTitleText(BuildContext context) {
